@@ -76,8 +76,8 @@ $("[id^=MaThQuIlL_]").each(function() {
 		{ id: 'pi', latex: '\\pi', tooltip: 'pi (pi)', icon: '\\pi' },
 		{ id: 'vert', latex: '\\vert', tooltip: 'such that (vert)', icon: '|' },
 		{ id: 'cup', latex: '\\cup', tooltip: 'union (union)', icon: '\\cup' },
-		// { id: 'leq', latex: '\\leq', tooltip: 'less than or equal (<=)', icon: '\\leq' },
-		// { id: 'geq', latex: '\\geq', tooltip: 'greater than or equal (>=)', icon: '\\geq' },
+		{ id: 'leq', latex: '\\leq', tooltip: 'less than or equal (<=)', icon: '\\leq' },
+		{ id: 'geq', latex: '\\geq', tooltip: 'greater than or equal (>=)', icon: '\\geq' },
 		{ id: 'text', latex: '\\text', tooltip: 'text mode (")', icon: 'Tt' }
 	];
 

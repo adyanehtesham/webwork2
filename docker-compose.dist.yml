@@ -16,8 +16,9 @@ services:
       #        + skip-name-resolve
       # Note: It seems different versions of the MariaDB container need
       #       this file in different locations. Put in in both places.
-      - "./docker-config/db/mariadb.cnf:/etc/mysql/conf.d/mariadb.cnf"
-      - "./docker-config/db/mariadb.cnf:/etc/mysql/mariadb.cnf"
+      - './docker-config/db/mariadb.cnf:/etc/mysql/conf.d/mariadb.cnf'
+      - './docker-config/db/mariadb.cnf:/etc/mysql/mariadb.cnf'
+
       # Tuning MariaDB config - sample file
       # The sample file modifies wait_timeout, and adds skip-name-resolve
       #- "./docker-config/db/my.cnf:/etc/mysql/my.cnf"
@@ -29,10 +30,10 @@ services:
       #- "/etc/localtime:/etc/localtime:ro"
 
       # The ulimits lines were only tested on Linux hosts in conjuction woth the limits.conf file
-      #    ulimits:
-      #      nofile:
-      #        soft: 4096
-      #        hard: 4096
+      #ulimits:
+      #  nofile:
+      #    soft: 4096
+      #    hard: 4096
 
     restart: always
     environment:
@@ -46,6 +47,7 @@ services:
       MYSQL_DATABASE: webwork
       MYSQL_USER: ${WEBWORK_DB_USER}
       MYSQL_PASSWORD: ${WEBWORK_DB_PASSWORD}
+
       # A timezone for the DB server can be set:
       #TZ: zone/city
       # where zone/city must be a valid setting.
@@ -84,19 +86,27 @@ services:
         # should be commented out.
 
         # main branches:
-        - WEBWORK2_BRANCH=WeBWorK-2.16+
-        - PG_BRANCH=PG-2.16
+        - WEBWORK2_BRANCH=main
+        - PG_BRANCH=main
+
         # WeBWorK/PG develop branches
         #    (other valid branches can also be used in a similar manner)
         #- WEBWORK2_BRANCH=develop
         #- PG_BRANCH=develop
 
-        # If you are using the 2 stage build process uncomment the next line
+      # If you would like a 1 stage build process comment out the next line, and just run "docker-compose build".
       dockerfile: DockerfileStage2
-      # and first run
-      #     docker build --tag webwork-base:forWW216 -f DockerfileStage1 .
+      # For the 2 stage build process run
+      #     docker build --tag webwork-base:forWW218 -f DockerfileStage1 .
       # and then
       #     docker-compose build
+      # When rebuilding to get updated images add the "--no-cache" option to both commands.
+      # You can add something like
+      #         --build-arg ADDITIONAL_BASE_IMAGE_PACKAGES="nano less"
+      # to the stage 1 "docker build" command to include extra OS packages in the base image.
+      # That approach makes them (persistent) so available immediately each time a container is
+      # started and is thus faster than adding them in when a container is started via the
+      # ADD_APT_PACKAGES setting below.
 
     depends_on:
       - db
@@ -131,70 +141,50 @@ services:
       #- "/per_host_data_path/webwork2/logs:/opt/webwork/webwork2/logs"
       #- "/per_host_data_path/webwork2/htdocs/tmp:/opt/webwork/webwork2/htdocs/tmp"
 
-      # By default the courses tree in a separate tree outside of webwork2/ as follows:
-      - "${COURSES_DIRECTORY_ON_HOST}:/opt/webwork/courses"
-      # OR mount like (here we are assuming that the hosts have different courses on them)
+      # By default mount the courses tree in a separate tree outside of webwork2/ as follows:
+      - '${COURSES_DIRECTORY_ON_HOST}:/opt/webwork/courses'
+      # OR use the following mount if the hosts have different courses on them:
       #- "/per_host_data_path/courses/:/opt/webwork/courses/"
+
+      # ======================================================================
+
+      # Mojolicious webwork2 app configuration.  For production you will need to modify this file.
+      # Note that the SSL configuration is done in this file.
+      # See https://docs.mojolicious.org/Mojo/Server/Daemon#listen for how to do this.
+      #- "/per_host_conf_path/conf/webwork2.mojolicious.yml:/opt/webwork/webwork2/conf/webwork2.mojolicious.yml"
+
+      # SSL certificates (subdirectory with certificate and key)
+      # Place your ssl certificate files used in webwork2.mojolicious.yml above in docker-config/ssl,
+      # or change the mount location to where your ssl certificate files reside.
+      #- "./docker-config/ssl/:/etc/ssl/local"
 
       # ======================================================================
 
       # By default the OPL is stored in a named Docker storage volume:
       - oplVolume:/opt/webwork/libraries/webwork-open-problem-library
       #
-      # as an alternative, you can comment out the prior option and uncomment the line below to use a local directory containing the OPL
+      # as an alternative, you can comment out the prior option and uncomment the line below to use
+      # a local directory containing the OPL
       #- "/path_to/webwork-open-problem-library:/opt/webwork/libraries/webwork-open-problem-library"
 
-      # ======================================================================
-
-      # The mounts from ./docker-config/ below are local samples.
-      # In production, there may be per-host versions of most
-      # of these files stored in an appropriate place.
-      # If not - the samples should be edited as needed.
-
-      # Main index.html page with a redirect (you probably need to customize some of these files)
-      #- "./docker-config/apache/index.html:/var/www/html/index.html"
-      #- "./docker-config/apache/htaccess:/var/www/html/.htaccess"
-
-      # Apache config (you probably need to customize some of these files)
-      - "./docker-config/apache/000-default.conf:/etc/apache2/sites-available/000-default.conf"
-      - "./docker-config/apache/apache2.conf:/etc/apache2/apache2.conf"
-      - "./docker-config/apache/mpm_prefork.conf:/etc/apache2/mods-enabled/mpm_prefork.conf"
-
-      # Apache logs - to have them persistent (per host) mount directory from outside.
-      #- "/per_host_data_path/apache2_logs:/var/log/apache2"
-
-      # ======================================================================
-
-      # SSL certificates (subdirectory with certificate and key)
-      #    (you MUST replace/customize these files, or change the location they are mounded from)
-      - "./docker-config/ssl/local/:/etc/ssl/local"
-
-      # Apache SSL config (you probably need to customize some of these files)
-      #    (make sure default-ssl.conf points to the certificates where they will be in the container)
-      - "./docker-config/ssl/ssl.conf:/etc/apache2/mods-available/ssl.conf"
-      - "./docker-config/ssl/default-ssl.conf:/etc/apache2/sites-available/default-ssl.conf"
       # ======================================================================
 
     hostname: myhost.mydomain.edu
 
     ports:
       # For a personal machine
-      - "${WEBWORK2_HTTP_PORT_ON_HOST}:80"
-      # For a production machine
-      #- "80:80"
-      #- "443:443"
+      - '${WEBWORK2_HTTP_PORT_ON_HOST}:8080'
 
       # For a production machine
-      #restart: always
+      #- "80:8080"
+      #- "443:8080"
+
+    # For a production machine
+    #restart: always
     stop_signal: SIGWINCH
     stop_grace_period: 30s
 
     environment:
-
-      DEV: 0
-
-      APACHE_RUN_GROUP: www-data
-
       # Standard database environment variables needed by WeBWorK:
 
       # Select which DBD driver to use
@@ -226,9 +216,19 @@ services:
       # Use to build additional locales in the running container at startup. Ex:
       #ADD_LOCALES: "he_IL ISO-8859-8\nhe_IL.UTF-8 UTF-8\n"
 
-      # Extra Ubuntu packages to install during startup
-      # Commenting the following line out will speed up container startup time.
-      ADD_APT_PACKAGES: nano less
+      # Extra Ubuntu packages to install during container startup.
+      #
+      # Uncommenting the ADD_APT_PACKAGES line and put the list of additional
+      # Ubuntu packages to install on the line.
+      #
+      # This is best used when you have a temporary need for additional
+      # packages, as using the ADD_APT_PACKAGES option will slow down the
+      # container startup time.
+      #
+      # OS packages you want frequently available are better added using the
+      # build time ADDITIONAL_BASE_IMAGE_PACKAGES setting described above.
+      #ADD_APT_PACKAGES: nano less
+
       # The system timezone for the container can be set using
       #SYSTEM_TIMEZONE: zone/city
       # where zone/city must be a valid setting.
@@ -238,18 +238,19 @@ services:
       # =======================================================
 
       # If you use https below, make sure to set up the certificate and SSL configuration
-      #      WEBWORK_ROOT_URL: https://myhost.mydomain.edu
+      # Note if your server uses a non-standard port, that should also be included.
+      #WEBWORK_ROOT_URL: https://myhost.mydomain.edu
 
-      #      WEBWORK_SMTP_SERVER: smtp.mydomain.edu
-      #      WEBWORK_SMTP_SENDER: support@mydomain.edu
+      #WEBWORK_SMTP_SERVER: smtp.mydomain.edu
+      #WEBWORK_SMTP_SENDER: support@mydomain.edu
 
-      #      WEBWORK_TIMEZONE: America/New_York
+      #WEBWORK_TIMEZONE: America/New_York
 
   r:
     image: ubcctlt/rserve
-#    # The R server need not be available from outside the local Docker network.
-#    ports:
-#      - "6311:6311"
+    # The R server need not be available from outside the local Docker network.
+    #ports:
+    #  - "6311:6311"
 
 volumes:
   oplVolume:
